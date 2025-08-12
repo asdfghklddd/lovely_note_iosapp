@@ -1,0 +1,75 @@
+笺间 MVP 架构（iMessage 配件版，极简）
+
+一、目标
+- 用 iMessage 作为传输层，不自建后端；主应用专注“写信—在途—达时—到家—开封”的仪式闭环。
+
+二、Targets
+- 主应用（SwiftUI）：创作、规则、归档、通知。
+- iMessage 扩展（MSMessagesAppViewController）：插入/展示“信封气泡”，开封入口，“保存到App”。
+- App Groups（共享容器）：主应用与扩展共享数据（UserDefaults + 文件）。
+
+三、核心闭环
+- 写信（限速 + 周墨水）→ 选择邮路（1/3/7 天）→ 生成气泡（含 payload）→ 对端点击查看 → 未达时显示倒计时/可保存到App → 保存后由主应用调度到点通知 → 达时且到家开封。
+
+四、最小数据模型（JSON）
+- Letter: { id, fromMe, content, createdAt, unlockAt, requiresHome, styleId? }
+  - 状态不入库：是否在途/可开封由 now >= unlockAt 与 homeFlag 推导。
+
+五、存储与共享
+- App Group ID: group.your.bundle.id（主应用与扩展同一标识）
+- 偏好/轻量索引：UserDefaults(suiteName:)
+  - keys: homeFlag(Bool), recentLetterId(String?)
+- 信件文件：/AppGroup/Letters/<id>.json（UTF-8 JSON）
+
+六、核心服务（主应用）
+- ComposeEngine：打字限速 2字/秒；粘贴按段节流；周墨水 600字。
+- DelayPolicy：三档邮路 → unlockAt（基于系统时间）。
+- LetterRepository：读写 App Group 目录 JSON；维护轻量索引。
+- HomeStatus：到家开关（UserDefaults）。
+- TimeProvider：系统时间（MVP 不做服务器校时）。
+- NotificationScheduler：UNUserNotificationCenter 安排本地提醒（仅“保存到App”的信）。
+
+七、iMessage 扩展职责
+- 生成 `MSMessageTemplateLayout` + `url` 载荷；插入会话。
+- 解析气泡 payload；判断 now>=unlockAt && homeFlag。
+- 未达时：显示倒计时与“保存到App”。达时且到家：开封动画+正文。
+- “保存到App”：写共享容器并用 URL Scheme 打开主应用。
+
+八、消息载荷（url JSON，几 KB 内）
+{
+  "v": 1,
+  "type": "letter",
+  "id": "uuid",
+  "unlockAt": 1736505600,
+  "requiresHome": true,
+  "style": "paper-01",
+  "inkUsed": 342,
+  "content": "base64-utf8-正文"
+}
+
+九、关键约束（MVP）
+- 不加密；限制字数以适配 url 体积。必要时轻压缩+Base64（后置）。
+- 扩展无法后台：通知由主应用在“保存到App”后调度。
+- 到家条件：手动开关（后续可地理围栏）。
+
+十、配置与集成
+- 在两个 Targets 勾选同一 App Group 标识。
+- 注册 URL Scheme：jian://save?id=<id>
+- 框架：Messages、UserNotifications、SwiftUI。
+
+十一、最小界面（主应用）
+- ComposeView：纸张/书体、限速/墨水提示、邮路选择、预览。
+- ListView：单列表（收/发合并，标签过滤）。
+- DetailView：到点与到家校验、开封动效、回信按钮。
+- SettingsView：到家开关、通知权限状态。
+
+十二、非目标（首版不做）
+- 媒体附件、强加密/口令派生、地理围栏、商店/收藏、云同步。
+
+十三、一周实施顺序
+- D1：Targets + App Group + URL Scheme，模型与存储骨架。
+- D2：Compose（限速/墨水）+ DelayPolicy。
+- D3：扩展插入气泡（模板+payload）。
+- D4：保存到App（共享容器→主应用→通知）。
+- D5：列表与详情开封逻辑+动效。
+- D6–D7：联测、边界与文案打磨、打包。

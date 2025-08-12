@@ -1,0 +1,35 @@
+实现路径（推荐）
+路径 A：iMessage App Extension（主打法，适合你的“仪式感”）
+新建 “iMessage Extension”。用 MSMessagesAppViewController 作为扩展入口。扩展里你可以：
+用 MSConversation 获取参与者、插入文本/附件/模板消息；
+用自定义 UI 呈现“纸张/蜡封/限速输入/墨水配额/预计到达时间”等；
+点击“寄出”时，把你的“延迟设定/地理开封规则”等序列化进 MSMessage 的 URL/布局里。
+优点：体验发生在“信息”里，正中“配件 App”定位；弱联网也能工作（消息最终由 iMessage 发送）。
+参考文档：Messages 框架总览、扩展控制器与会话对象。​
+APPLE DEVELOPER
+路径 B：主 App + MessageUI 组合（轻集成）
+在你的主 App 里完成“限速写作/墨水计量/延迟计算”，到“寄出”时弹出 MFMessageComposeViewController 预填文案或附件；用户点“发送”。
+适用于：你不做 iMessage 内的复杂 UI，只用系统撰写页完成最终发送。​
+APPLE DEVELOPER
+提醒：两条路径可以同时并存。主 App 做仪式与规则；iMessage 扩展提供“在对话里直接写信”的极简入口。
+【注意，我的主体肯定还是一个ios app，我只是希望借助imessage实现消息发送的功能】
+关键文档（官方）
+Messages 框架概览（Sticker/扩展/消息对象）：​
+https://developer.apple.com/documentation/messages?utm_source=chatgpt.com
+MSMessagesAppViewController（扩展主控制器）：​
+https://developer.apple.com/documentation/messages/msmessagesappviewcontroller?utm_source=chatgpt.com
+MSConversation（会话访问与发送）：​
+https://developer.apple.com/documentation/messages/msconversation?utm_source=chatgpt.com
+MSMessage（消息实体、模板/错误）：​
+https://developer.apple.com/documentation/messages/msmessage?utm_source=chatgpt.com
+MessageUI 框架（系统撰写界面）：​
+https://developer.apple.com/documentation/messageui?utm_source=chatgpt.com
+MFMessageComposeViewController / Delegate（预填并呈现发送页）：​
+https://developer.apple.com/documentation/messageui/mfmessagecomposeviewcontroller?utm_source=chatgpt.com
+SiriKit Messaging（仅用于你自己的消息服务）：​
+https://developer.apple.com/documentation/sirikit/messaging?utm_source=chatgpt.com
+App Store 审核指南（禁止私有 API/静默发送等）：​
+https://developer.apple.com/app-store/review/guidelines/?utm_source=chatgpt.com
+
+iMessage Apps 开发主页（入口与示例/视频）：​
+https://developer.apple.com/imessage/?utm_source=chatgpt.com
